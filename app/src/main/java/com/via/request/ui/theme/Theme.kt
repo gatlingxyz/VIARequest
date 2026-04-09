@@ -56,7 +56,7 @@ fun VIARequestTheme(
 
     MaterialTheme(
         colorScheme = LightColorScheme,
-        typography = Typography,
+//        typography = Typography,
         content = content
     )
 }

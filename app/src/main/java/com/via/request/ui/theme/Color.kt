@@ -14,3 +14,7 @@ val LightBlue = Color(0xFFEFFCFF)
 val Teal = Color(0xFF87D6CD)
 val DarkGreen = Color(0xFF285976)
 val DarkerGreen = Color(0xFF165868)
+val LightGreen = Color(0xFF87D6A5)
+val LightRed = Color(0xFFFFABAB)
+
+val ButtonOutline = Color(0xFF87D6CD)

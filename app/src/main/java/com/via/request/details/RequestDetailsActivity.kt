@@ -1,13 +1,12 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.via.request
+package com.via.request.details
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,13 +15,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,8 +55,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.via.request.composables.SliderButton
-import com.via.request.composables.ViaElevatedButton
+import com.via.request.R
+import com.via.request.ui.composables.SliderButton
+import com.via.request.ui.composables.ViaElevatedButton
+import com.via.request.models.Request
 import com.via.request.ui.theme.DarkGreen
 import com.via.request.ui.theme.DarkerGreen
 import com.via.request.ui.theme.LightBlue
@@ -78,7 +77,7 @@ import kotlinx.serialization.Serializable
 }
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class RequestDetailsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -133,7 +132,7 @@ class MainActivity : ComponentActivity() {
                         composable<RequestDestination.Home> {
                             HomeScreen(
                                 createNewRequest = {
-                                    viewModel.onEvent(RequestEvent.CreateNewRequest)
+                                    viewModel.onEvent(RequestDetailsEvent.CreateNewRequest)
                                 }
                             )
                         }
@@ -155,18 +154,20 @@ class MainActivity : ComponentActivity() {
                                 headline = request.headline,
                                 message = request.message,
                                 approveRequest = {
-                                    viewModel.onEvent(RequestEvent.ApproveRequest(request))
+                                    viewModel.onEvent(RequestDetailsEvent.ApproveRequest(request))
                                 },
                                 rejectRequest = {
-                                    viewModel.onEvent(RequestEvent.RejectRequest(request))
+                                    viewModel.onEvent(RequestDetailsEvent.RejectRequest(request))
                                 }
                             )
+
+                            if (requestState is RequestState.Loading) {
+                                LoadingDialog((requestState as RequestState.Loading).loadingMessage)
+                            }
                         }
                     }
 
-                    if (requestState is RequestState.Loading) {
-                        LoadingDialog((requestState as RequestState.Loading).loadingMessage)
-                    }
+
                 }
             }
         }

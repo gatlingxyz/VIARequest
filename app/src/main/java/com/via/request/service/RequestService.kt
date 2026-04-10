@@ -1,6 +1,6 @@
 package com.via.request.service
 
-import com.via.request.Request
+import com.via.request.models.Request
 
 
 interface RequestService {

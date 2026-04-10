@@ -1,7 +1,8 @@
-package com.via.request
+package com.via.request.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.via.request.models.Request
 import com.via.request.service.RequestResponse
 import com.via.request.service.RequestService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,26 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
-
-sealed interface RequestState {
-    data class Loading(val loadingMessage: String): RequestState
-    data class Approved(val message: String): RequestState
-    data class Rejected(val reason: String): RequestState
-    data class Error(val message: String): RequestState
-}
-
-@Serializable data class Request(
-    val headline: String,
-    val message: String,
-)
-
-sealed interface RequestEvent {
-    data object CreateNewRequest: RequestEvent
-    data class RejectRequest(val request: Request): RequestEvent
-    data class ApproveRequest(val request: Request): RequestEvent
-}
-
-
 
 @HiltViewModel
 class RequestDetailViewModel @Inject constructor(
@@ -45,15 +26,15 @@ class RequestDetailViewModel @Inject constructor(
     private val _requestStateFlow: MutableSharedFlow<RequestState> = MutableSharedFlow()
     val requestState = _requestStateFlow.asSharedFlow()
 
-    fun onEvent(event: RequestEvent) {
+    fun onEvent(event: RequestDetailsEvent) {
         viewModelScope.launch {
             handleEvent(event)
         }
     }
 
-    private suspend fun handleEvent(event: RequestEvent) {
+    private suspend fun handleEvent(event: RequestDetailsEvent) {
         when(event) {
-            is RequestEvent.CreateNewRequest -> {
+            is RequestDetailsEvent.CreateNewRequest -> {
                 _destinationFlow.emit(
                     RequestDestination.RequestDetails(
                         headline = requestHeadlines.random(),
@@ -61,10 +42,10 @@ class RequestDetailViewModel @Inject constructor(
                     )
                 )
             }
-            is RequestEvent.RejectRequest -> {
+            is RequestDetailsEvent.RejectRequest -> {
                 rejectRequest(event.request)
             }
-            is RequestEvent.ApproveRequest -> {
+            is RequestDetailsEvent.ApproveRequest -> {
                 acceptRequest(event.request)
             }
         }

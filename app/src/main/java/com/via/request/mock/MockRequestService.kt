@@ -1,7 +1,6 @@
 package com.via.request.mock
 
-import android.net.http.HttpException
-import com.via.request.Request
+import com.via.request.models.Request
 import com.via.request.service.RequestResponse
 import com.via.request.service.RequestService
 import kotlinx.coroutines.delay

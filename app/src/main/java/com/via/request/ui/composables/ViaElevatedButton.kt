@@ -1,4 +1,4 @@
-package com.via.request.composables
+package com.via.request.ui.composables
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues

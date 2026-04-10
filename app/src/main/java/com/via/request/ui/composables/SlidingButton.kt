@@ -1,4 +1,4 @@
-package com.via.request.composables
+package com.via.request.ui.composables
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState

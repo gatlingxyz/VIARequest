@@ -2,6 +2,7 @@
 
 package com.via.request
 
+import android.health.connect.datatypes.units.Percentage
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,6 +57,7 @@ import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,12 +65,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -284,6 +295,10 @@ fun HomeScreen(
                 .size(150.dp)
         )
         Spacer(Modifier.size(48.dp))
+        CustomSliderButton(
+            originalLabel = "Slide to approve",
+            finishedLabel = "Approved"
+        )
         ViaElevatedButton(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -461,6 +476,7 @@ fun CustomSliderButton(
     finishedLabel: String,
 ) {
 
+    val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
 
     var isFinished by remember {
@@ -483,7 +499,11 @@ fun CustomSliderButton(
         originalLabel
     }
 
+
+
     println("Offset: $offsetX")
+
+
 
     BoxWithConstraints (
         modifier = modifier,
@@ -491,9 +511,27 @@ fun CustomSliderButton(
         contentAlignment = Alignment.CenterStart
     ) {
 
-        val test = with(density) {
-            (maxWidth - 64.dp).toPx()
+
+
+        val test = remember(density, maxWidth) {
+            with(density) {
+                (maxWidth - 64.dp).toPx()
+            }
         }
+
+        val percentage = (offsetX/test).coerceIn(0F, 1F)
+
+        val brush = brushFromPercentage(
+            percentage,
+            leftColor = LightGreen,
+            rightColor = DarkGreen
+        )
+
+//        val textBrush = brushFromPercentage(
+//            percentage,
+//            leftColor = Color.White,
+//            rightColor =
+//        )
 
         val intOffset by animateIntOffsetAsState(
             IntOffset(offsetX.roundToInt().coerceIn(
@@ -506,15 +544,20 @@ fun CustomSliderButton(
 
         Text(
             label,
-            modifier = Modifier.width(maxWidth)
-                .background(
-                    color = DarkGreen,
-                )
+            modifier = Modifier
+                .width(maxWidth)
                 .border(1.dp, ButtonOutline, shape = RoundedCornerShape(10.dp))
+                .background(
+                    brush = brush,
+                    shape = RoundedCornerShape(10.dp)
+                )
                 .padding(
                     vertical = 12.dp
-                ),
+                )
+            ,
             textAlign = TextAlign.Center,
+            color = Color.White,
+//            style = TextStyle(brush = textBrush)
         )
 
         SlidingButtonThumb(
@@ -530,6 +573,7 @@ fun CustomSliderButton(
                         if (offsetX <= test) {
                             offsetX = 0F
                         } else {
+                            offsetX = test
                             isFinished = true
                         }
                     }
@@ -537,6 +581,19 @@ fun CustomSliderButton(
         )
 
     }
+}
+
+fun brushFromPercentage(
+    percentage: Float,
+    leftColor: Color,
+    rightColor: Color,
+): Brush {
+    return Brush.horizontalGradient(
+        0F to leftColor,
+        percentage to leftColor,
+        percentage to rightColor,
+        1F to rightColor,
+    )
 }
 
 @Composable

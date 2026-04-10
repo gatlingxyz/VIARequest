@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
 sealed interface RequestState {
-    data object Loading: RequestState
+    data class Loading(val loadingMessage: String): RequestState
     data class Approved(val message: String): RequestState
     data class Rejected(val reason: String): RequestState
     data class Error(val message: String): RequestState
@@ -71,7 +71,7 @@ class RequestDetailViewModel @Inject constructor(
     }
 
     private suspend fun rejectRequest(request: Request) {
-        _requestStateFlow.emit(RequestState.Loading)
+        _requestStateFlow.emit(RequestState.Loading("Rejecting request..."))
 
         runCatching {
             requestService.rejectRequest(request)
@@ -80,7 +80,7 @@ class RequestDetailViewModel @Inject constructor(
     }
 
     private suspend fun acceptRequest(request: Request) {
-        _requestStateFlow.emit(RequestState.Loading)
+        _requestStateFlow.emit(RequestState.Loading("Approving request..."))
 
         runCatching {
             requestService.acceptRequest(request)

@@ -1,6 +1,7 @@
 package com.via.request.composables
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,8 +18,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.KeyboardDoubleArrowRight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,7 +45,7 @@ import kotlin.math.roundToInt
 
 @Preview
 @Composable
-fun CustomSliderPreview() {
+fun SlidingButtonPreview() {
     VIARequestTheme() {
         SlidingButton(
             originalLabel = "Slide to approve",
@@ -52,7 +55,93 @@ fun CustomSliderPreview() {
     }
 }
 
+@Preview
 @Composable
+fun SliderButtonPreview() {
+    VIARequestTheme() {
+        SliderButton(
+            originalLabel = "Slide to approve",
+            finishedLabel = "Approved",
+            onFinished = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SliderButton(
+    modifier: Modifier = Modifier,
+    originalLabel: String,
+    finishedLabel: String,
+    colorLeft: Color = MaterialTheme.colorScheme.primary,
+    colorRight: Color = MaterialTheme.colorScheme.secondary,
+    onFinished: () -> Unit,
+) {
+
+    var isFinished by remember {
+        mutableStateOf(false)
+    }
+
+    var value by remember {
+        mutableFloatStateOf(0F)
+    }
+
+    val animatedValue by animateFloatAsState(value)
+
+    val label = if (isFinished) {
+        finishedLabel
+    } else {
+        originalLabel
+    }
+
+    val brush = brushFromPercentage(
+        animatedValue,
+        leftColor = colorLeft,
+        rightColor = colorRight
+    )
+
+    Slider(
+        modifier = modifier,
+        value = animatedValue,
+        onValueChange = {
+            if (!isFinished) {
+                value = it
+            }
+        },
+        onValueChangeFinished = {
+            if (value >= 0.9F) {
+                value = 1F
+                isFinished = true
+                onFinished()
+            } else {
+                value = 0F
+            }
+        },
+        track = {
+            SlidingButtonTrack(
+                label = label,
+                brush = brush
+            )
+        },
+        thumb = {
+            DefaultSlidingButtonThumb(
+                isFinished = isFinished
+            )
+        }
+    )
+
+}
+
+/**
+ * I built this one first, assuming for some reason that the native Slider wouldn't work.
+ * After I had added the FINISHING TOUCHES to this, I thought about it a bit more and wondered
+ * was I missing something in Slider.
+ *
+ * Well, I was. lol So I went back, coded it using the native Slider Composables.
+ * Leaving this here because I'm still proud of it.
+ */
+@Composable
+@Deprecated("Use SliderButton instead")
 fun SlidingButton(
     modifier: Modifier = Modifier,
     originalLabel: String,

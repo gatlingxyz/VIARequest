@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.via.request
 
 import android.os.Bundle
@@ -5,52 +7,74 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.KeyboardDoubleArrowRight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarVisuals
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -64,6 +88,7 @@ import com.via.request.ui.theme.LightRed
 import com.via.request.ui.theme.VIARequestTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.Serializable
+import kotlin.math.roundToInt
 
 @Serializable sealed interface RequestDestination {
     @Serializable data object Home: RequestDestination
@@ -99,7 +124,7 @@ class MainActivity : ComponentActivity() {
                     }?.let { message ->
                         snackbarHostState.showSnackbar(
                             message = message,
-                            duration = SnackbarDuration.Short,
+                            duration = SnackbarDuration.Indefinite,
                         )
                     }
                 }
@@ -184,6 +209,7 @@ fun ViaSnackbarHost(
 
     SnackbarHost(snackbarHostState) { snackbarData ->
         Snackbar(
+            modifier = Modifier.padding(horizontal = 12.dp),
             containerColor = snackbarColors.containerColor,
             contentColor = snackbarColors.contentColor,
             actionContentColor = snackbarColors.contentColor,
@@ -220,8 +246,8 @@ fun HomePreview() {
 fun RequestPreview() {
     VIARequestTheme() {
         RequestScreen(
-            headline = "",
-            message = "",
+            headline = "Headline 1",
+            message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ultricies, purus quis viverra mattis, justo quam iaculis erat, at cursus velit justo nec libero. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nam et libero facilisis, commodo orci in, hendrerit enim. Etiam congue nec orci a placerat. Donec libero ipsum, aliquet nec lobortis vel, feugiat sed erat. Suspendisse imperdiet, massa in varius lobortis, nisi nibh porta quam, eu ullamcorper mi nulla sed justo. Maecenas fermentum imperdiet lorem quis egestas.",
             approveRequest = {},
             rejectRequest = {}
         )
@@ -292,7 +318,15 @@ fun ViaElevatedButton(
         elevation = ButtonDefaults.elevatedButtonElevation(
             defaultElevation = 3.dp
         ),
-        content = content
+        contentPadding = PaddingValues(
+            vertical = 16.dp,
+            horizontal = 24.dp
+        ),
+        content = {
+            CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
+                content()
+            }
+        }
     )
 }
 
@@ -318,6 +352,9 @@ fun RequestScreen(
         )
         Spacer(Modifier.size(48.dp))
         Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(3F),
             colors = CardDefaults.cardColors(
                 containerColor = DarkerGreen
             )
@@ -331,30 +368,204 @@ fun RequestScreen(
                     color = Color.White,
                 )
                 Text(message,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
                 )
             }
         }
-        Row() {
+        Spacer(Modifier.size(48.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1F),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             ViaElevatedButton(
                 onClick = rejectRequest
             ) {
                 Text("Reject")
             }
-            ViaElevatedButton(
-                onClick = approveRequest
-            ) {
-                Text("Slide to approve")
-            }
+            Spacer(Modifier.size(16.dp))
+            CustomSliderButton(
+                originalLabel = "Slide to approve",
+                finishedLabel = "Approved"
+            )
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun SlidingButton() {
+fun SlidingButton(
+    modifier: Modifier = Modifier,
+    originalLabel: String,
+    finishedLabel: String,
+) {
+    var isFinished by remember {
+        mutableStateOf(false)
+    }
 
+    val label = if (isFinished) {
+        finishedLabel
+    } else {
+        originalLabel
+    }
+
+    val sliderState = rememberSliderState(
+        steps = 1,
+        onValueChangeFinished = {
+            isFinished = true
+        }
+    )
+
+    Slider(
+        modifier = modifier,
+        state = sliderState,
+        enabled = !isFinished,
+        colors = SliderDefaults.colors(
+
+        ),
+        thumb = {
+            SlidingButtonThumb(isFinished)
+        },
+        track = { sliderState ->
+            Text(
+                label,
+                modifier = Modifier.fillMaxWidth()
+                    .background(
+                        color = DarkGreen,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .border(1.dp, ButtonOutline)
+                    .padding(
+                        vertical = 8.dp
+                    ),
+                textAlign = TextAlign.Center,
+            )
+        }
+    )
+}
+@Preview
+@Composable
+fun CustomSliderPreview() {
+    CustomSliderButton(
+        originalLabel = "Slide to approve",
+        finishedLabel = "Approved"
+    )
+}
+
+@Composable
+fun CustomSliderButton(
+    modifier: Modifier = Modifier,
+    originalLabel: String,
+    finishedLabel: String,
+) {
+
+    val density = LocalDensity.current
+
+    var isFinished by remember {
+        mutableStateOf(false)
+    }
+
+    var offsetX by remember { mutableFloatStateOf(0f) }
+
+
+
+    val draggableState = rememberDraggableState {
+        if (!isFinished) {
+            offsetX += it
+        }
+    }
+
+    val label = if (isFinished) {
+        finishedLabel
+    } else {
+        originalLabel
+    }
+
+    println("Offset: $offsetX")
+
+    BoxWithConstraints (
+        modifier = modifier,
+        propagateMinConstraints = true,
+        contentAlignment = Alignment.CenterStart
+    ) {
+
+        val test = with(density) {
+            (maxWidth - 64.dp).toPx()
+        }
+
+        val intOffset by animateIntOffsetAsState(
+            IntOffset(offsetX.roundToInt().coerceIn(
+                minimumValue = 0,
+                maximumValue = test.toInt()
+            ), 0)
+        )
+
+        println("Max Width: ${constraints.maxWidth}")
+
+        Text(
+            label,
+            modifier = Modifier.width(maxWidth)
+                .background(
+                    color = DarkGreen,
+                )
+                .border(1.dp, ButtonOutline, shape = RoundedCornerShape(10.dp))
+                .padding(
+                    vertical = 12.dp
+                ),
+            textAlign = TextAlign.Center,
+        )
+
+        SlidingButtonThumb(
+            isApproved = isFinished,
+            modifier = Modifier
+                .offset {
+                    intOffset
+                }
+                .draggable(
+                    state = draggableState,
+                    orientation = Orientation.Horizontal,
+                    onDragStopped = {
+                        if (offsetX <= test) {
+                            offsetX = 0F
+                        } else {
+                            isFinished = true
+                        }
+                    }
+                )
+        )
+
+    }
+}
+
+@Composable
+fun SlidingButtonThumb(
+    isApproved: Boolean,
+    modifier: Modifier = Modifier,
+) {
+
+    val icon = if (isApproved) {
+        Icons.Rounded.CheckCircle
+    } else {
+        Icons.Rounded.KeyboardDoubleArrowRight
+    }
+
+    Box(
+        modifier = modifier
+            .size(64.dp)
+            .shadow(elevation = 4.dp)
+            .background(color = LightBlue, shape = RoundedCornerShape(10.dp))
+    ) {
+        Icon(icon,
+            contentDescription = null,
+            modifier = Modifier
+                .size(48.dp)
+                .padding(8.dp)
+                .align(Alignment.Center),
+            tint = LightGreen
+        )
+    }
 }
 
 /**

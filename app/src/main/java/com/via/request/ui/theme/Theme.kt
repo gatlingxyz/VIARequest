@@ -19,11 +19,12 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Teal,
+    primary = LightGreen,
     secondary = DarkGreen,
     tertiary = DarkerGreen,
     background = LightBlue,
-    primaryContainer = DarkGreen
+    primaryContainer = DarkGreen,
+    secondaryContainer = LightBlue
 
 
     /* Other default colors to override

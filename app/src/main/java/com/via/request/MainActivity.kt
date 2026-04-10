@@ -90,6 +90,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.via.request.composables.SlidingButton
 import com.via.request.ui.theme.ButtonOutline
 import com.via.request.ui.theme.DarkGreen
 import com.via.request.ui.theme.DarkerGreen
@@ -173,6 +174,11 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable<RequestDestination.RequestDetails> {
+
+                            LaunchedEffect(it) {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                            }
+
                             val route = it.toRoute<RequestDestination.RequestDetails>()
 
                             val request = Request(
@@ -295,10 +301,6 @@ fun HomeScreen(
                 .size(150.dp)
         )
         Spacer(Modifier.size(48.dp))
-        CustomSliderButton(
-            originalLabel = "Slide to approve",
-            finishedLabel = "Approved"
-        )
         ViaElevatedButton(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -402,228 +404,20 @@ fun RequestScreen(
                 Text("Reject")
             }
             Spacer(Modifier.size(16.dp))
-            CustomSliderButton(
+            SlidingButton(
                 originalLabel = "Slide to approve",
-                finishedLabel = "Approved"
-            )
-        }
-    }
-}
-
-@Composable
-fun SlidingButton(
-    modifier: Modifier = Modifier,
-    originalLabel: String,
-    finishedLabel: String,
-) {
-    var isFinished by remember {
-        mutableStateOf(false)
-    }
-
-    val label = if (isFinished) {
-        finishedLabel
-    } else {
-        originalLabel
-    }
-
-    val sliderState = rememberSliderState(
-        steps = 1,
-        onValueChangeFinished = {
-            isFinished = true
-        }
-    )
-
-    Slider(
-        modifier = modifier,
-        state = sliderState,
-        enabled = !isFinished,
-        colors = SliderDefaults.colors(
-
-        ),
-        thumb = {
-            SlidingButtonThumb(isFinished)
-        },
-        track = { sliderState ->
-            Text(
-                label,
-                modifier = Modifier.fillMaxWidth()
-                    .background(
-                        color = DarkGreen,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .border(1.dp, ButtonOutline)
-                    .padding(
-                        vertical = 8.dp
-                    ),
-                textAlign = TextAlign.Center,
-            )
-        }
-    )
-}
-@Preview
-@Composable
-fun CustomSliderPreview() {
-    CustomSliderButton(
-        originalLabel = "Slide to approve",
-        finishedLabel = "Approved"
-    )
-}
-
-@Composable
-fun CustomSliderButton(
-    modifier: Modifier = Modifier,
-    originalLabel: String,
-    finishedLabel: String,
-) {
-
-    val textMeasurer = rememberTextMeasurer()
-    val density = LocalDensity.current
-
-    var isFinished by remember {
-        mutableStateOf(false)
-    }
-
-    var offsetX by remember { mutableFloatStateOf(0f) }
-
-
-
-    val draggableState = rememberDraggableState {
-        if (!isFinished) {
-            offsetX += it
-        }
-    }
-
-    val label = if (isFinished) {
-        finishedLabel
-    } else {
-        originalLabel
-    }
-
-
-
-    println("Offset: $offsetX")
-
-
-
-    BoxWithConstraints (
-        modifier = modifier,
-        propagateMinConstraints = true,
-        contentAlignment = Alignment.CenterStart
-    ) {
-
-
-
-        val test = remember(density, maxWidth) {
-            with(density) {
-                (maxWidth - 64.dp).toPx()
-            }
-        }
-
-        val percentage = (offsetX/test).coerceIn(0F, 1F)
-
-        val brush = brushFromPercentage(
-            percentage,
-            leftColor = LightGreen,
-            rightColor = DarkGreen
-        )
-
-//        val textBrush = brushFromPercentage(
-//            percentage,
-//            leftColor = Color.White,
-//            rightColor =
-//        )
-
-        val intOffset by animateIntOffsetAsState(
-            IntOffset(offsetX.roundToInt().coerceIn(
-                minimumValue = 0,
-                maximumValue = test.toInt()
-            ), 0)
-        )
-
-        println("Max Width: ${constraints.maxWidth}")
-
-        Text(
-            label,
-            modifier = Modifier
-                .width(maxWidth)
-                .border(1.dp, ButtonOutline, shape = RoundedCornerShape(10.dp))
-                .background(
-                    brush = brush,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .padding(
-                    vertical = 12.dp
-                )
-            ,
-            textAlign = TextAlign.Center,
-            color = Color.White,
-//            style = TextStyle(brush = textBrush)
-        )
-
-        SlidingButtonThumb(
-            isApproved = isFinished,
-            modifier = Modifier
-                .offset {
-                    intOffset
+                finishedLabel = "Approved",
+                onFinished = {
+                    approveRequest()
                 }
-                .draggable(
-                    state = draggableState,
-                    orientation = Orientation.Horizontal,
-                    onDragStopped = {
-                        if (offsetX <= test) {
-                            offsetX = 0F
-                        } else {
-                            offsetX = test
-                            isFinished = true
-                        }
-                    }
-                )
-        )
-
+            )
+        }
     }
 }
 
-fun brushFromPercentage(
-    percentage: Float,
-    leftColor: Color,
-    rightColor: Color,
-): Brush {
-    return Brush.horizontalGradient(
-        0F to leftColor,
-        percentage to leftColor,
-        percentage to rightColor,
-        1F to rightColor,
-    )
-}
 
-@Composable
-fun SlidingButtonThumb(
-    isApproved: Boolean,
-    modifier: Modifier = Modifier,
-) {
 
-    val icon = if (isApproved) {
-        Icons.Rounded.CheckCircle
-    } else {
-        Icons.Rounded.KeyboardDoubleArrowRight
-    }
 
-    Box(
-        modifier = modifier
-            .size(64.dp)
-            .shadow(elevation = 4.dp)
-            .background(color = LightBlue, shape = RoundedCornerShape(10.dp))
-    ) {
-        Icon(icon,
-            contentDescription = null,
-            modifier = Modifier
-                .size(48.dp)
-                .padding(8.dp)
-                .align(Alignment.Center),
-            tint = LightGreen
-        )
-    }
-}
 
 /**
  *

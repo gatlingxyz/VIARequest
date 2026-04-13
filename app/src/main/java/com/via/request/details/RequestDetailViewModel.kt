@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
@@ -27,20 +28,14 @@ class RequestDetailViewModel @Inject constructor(
     val requestState = _requestStateFlow.asSharedFlow()
 
     fun onEvent(event: RequestDetailsEvent) {
-        viewModelScope.launch {
-            handleEvent(event)
-        }
-    }
-
-    private suspend fun handleEvent(event: RequestDetailsEvent) {
         when(event) {
             is RequestDetailsEvent.CreateNewRequest -> {
-                _destinationFlow.emit(
+                _destinationFlow.update {
                     RequestDestination.RequestDetails(
                         headline = requestHeadlines.random(),
                         message = requestMessages.random(),
                     )
-                )
+                }
             }
             is RequestDetailsEvent.RejectRequest -> {
                 rejectRequest(event.request)
@@ -51,27 +46,33 @@ class RequestDetailViewModel @Inject constructor(
         }
     }
 
-    private suspend fun rejectRequest(request: Request) {
-        _requestStateFlow.emit(RequestState.Loading("Rejecting request..."))
+    private fun rejectRequest(request: Request) {
+        viewModelScope.launch {
+            _requestStateFlow.emit(RequestState.Loading(false))
 
-        runCatching {
-            requestService.rejectRequest(request)
+            runCatching {
+                requestService.rejectRequest(request)
+            }
+                .handleResponse()
         }
-            .handleResponse()
     }
 
-    private suspend fun acceptRequest(request: Request) {
-        _requestStateFlow.emit(RequestState.Loading("Approving request..."))
+    private fun acceptRequest(request: Request) {
+        viewModelScope.launch {
+            _requestStateFlow.emit(RequestState.Loading(true))
 
-        runCatching {
-            requestService.acceptRequest(request)
+            runCatching {
+                requestService.acceptRequest(request)
+            }
+                .handleResponse()
         }
-            .handleResponse()
 
     }
 
     private suspend fun Result<RequestResponse>.handleResponse() {
-        _destinationFlow.emit(RequestDestination.Home)
+        _destinationFlow.update {
+            RequestDestination.Home
+        }
 
         onSuccess { response ->
             val state = if (response.accepted) {
@@ -83,13 +84,13 @@ class RequestDetailViewModel @Inject constructor(
             _requestStateFlow.emit(state)
         }
             .onFailure {
-                _requestStateFlow.emit(RequestState.Error(it.message ?: "Something went wrong."))
+                _requestStateFlow.emit(RequestState.Error(it.message))
             }
     }
 
     private val requestHeadlines = listOf(
         "I wanna be the very best",
-        "Like no one ever war",
+        "Like no one ever was",
         "To catch them is my real test",
         "To train them is my cause",
         "I will travel across the land",

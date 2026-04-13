@@ -162,7 +162,10 @@ class RequestDetailsActivity : ComponentActivity() {
                             )
 
                             if (requestState is RequestState.Loading) {
-                                LoadingDialog((requestState as RequestState.Loading).loadingMessage)
+                                val state = requestState as RequestState.Loading
+                                LoadingDialog(
+                                    loadingMessage = if (state.approving) "Approving request..." else "Rejecting request..."
+                                )
                             }
                         }
                     }

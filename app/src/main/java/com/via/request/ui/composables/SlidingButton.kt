@@ -73,6 +73,7 @@ fun SliderButton(
     modifier: Modifier = Modifier,
     originalLabel: String,
     finishedLabel: String,
+    start: Float = 0.15F,
     colorLeft: Color = MaterialTheme.colorScheme.primary,
     colorRight: Color = MaterialTheme.colorScheme.secondary,
     onFinished: () -> Unit,
@@ -83,7 +84,7 @@ fun SliderButton(
     }
 
     var value by remember {
-        mutableFloatStateOf(0F)
+        mutableFloatStateOf(start)
     }
 
     val animatedValue by animateFloatAsState(value)
@@ -105,7 +106,7 @@ fun SliderButton(
         value = animatedValue,
         onValueChange = {
             if (!isFinished) {
-                value = it
+                value = it.coerceAtLeast(start)
             }
         },
         onValueChangeFinished = {
@@ -114,7 +115,7 @@ fun SliderButton(
                 isFinished = true
                 onFinished()
             } else {
-                value = 0F
+                value = start
             }
         },
         track = {

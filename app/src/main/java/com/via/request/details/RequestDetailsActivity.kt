@@ -163,8 +163,9 @@ class RequestDetailsActivity : ComponentActivity() {
 
                             if (requestState is RequestState.Loading) {
                                 val state = requestState as RequestState.Loading
+                                val message = if (state.approving) "Approving request..." else "Rejecting request..."
                                 LoadingDialog(
-                                    loadingMessage = if (state.approving) "Approving request..." else "Rejecting request..."
+                                    loadingMessage = message
                                 )
                             }
                         }
@@ -292,7 +293,7 @@ fun HomeScreen(
         ,
     ) {
         Text("Home",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
             color = DarkGreen,
         )
@@ -307,7 +308,7 @@ fun HomeScreen(
                     color = Color.White,
                     shape = CircleShape,
                 )
-                .size(150.dp)
+                .size(225.dp)
         )
         Spacer(Modifier.size(48.dp))
         ViaElevatedButton(
@@ -319,7 +320,7 @@ fun HomeScreen(
             onClick = createNewRequest,
         ) {
             Text("Create new request",
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 
@@ -345,7 +346,7 @@ fun RequestScreen(
         ,
     ) {
         Text("New Request",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -367,6 +368,7 @@ fun RequestScreen(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                 )
+                Spacer(Modifier.size(8.dp))
                 Text(message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
@@ -383,6 +385,7 @@ fun RequestScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ViaElevatedButton(
+                modifier = Modifier.weight(1F),
                 enabled = !loading,
                 onClick = {
                     loading = true
@@ -391,8 +394,8 @@ fun RequestScreen(
             ) {
                 Text("Reject")
             }
-            Spacer(Modifier.size(16.dp))
             SliderButton(
+                modifier = Modifier.weight(3F),
                 originalLabel = "Slide to approve",
                 finishedLabel = "Approved",
                 onFinished = {

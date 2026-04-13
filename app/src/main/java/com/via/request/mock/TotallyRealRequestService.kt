@@ -7,7 +7,7 @@ import kotlinx.coroutines.delay
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-class MockRequestService @Inject constructor(): RequestService {
+class TotallyRealRequestService @Inject constructor(): RequestService {
 
     private val mockAcceptedResponse = RequestResponse(
         accepted = true,

@@ -71,6 +71,7 @@ fun SliderButtonPreview() {
 @Composable
 fun SliderButton(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     originalLabel: String,
     finishedLabel: String,
     start: Float = 0.15F,
@@ -103,6 +104,7 @@ fun SliderButton(
 
     Slider(
         modifier = modifier,
+        enabled = enabled,
         value = animatedValue,
         onValueChange = {
             if (!isFinished) {

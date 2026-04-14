@@ -2,6 +2,7 @@
 
 package com.via.request.details
 
+import android.R.id.message
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -33,6 +34,8 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -50,7 +54,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -66,14 +74,13 @@ import com.via.request.ui.theme.LightGreen
 import com.via.request.ui.theme.LightRed
 import com.via.request.ui.theme.VIARequestTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.serialization.Serializable
 
 @Serializable sealed interface RequestDestination {
     @Serializable data object Home: RequestDestination
-    @Serializable data class RequestDetails(
-        val headline: String,
-        val message: String,
-    ): RequestDestination
+    @Serializable data object RequestDetails: RequestDestination
 }
 
 @AndroidEntryPoint
@@ -117,11 +124,8 @@ class RequestDetailsActivity : ComponentActivity() {
                     },
                 ) { innerPadding ->
 
-                    val destination by viewModel.destinationFlow
-                        .collectAsStateWithLifecycle()
-
-                    LaunchedEffect(destination) {
-                        navController.navigate(destination)
+                    FlowCollector(viewModel.destinationFlow) {
+                        navController.navigate(it)
                     }
 
                     NavHost(
@@ -143,27 +147,16 @@ class RequestDetailsActivity : ComponentActivity() {
                                 snackbarHostState.currentSnackbarData?.dismiss()
                             }
 
-                            val route = it.toRoute<RequestDestination.RequestDetails>()
-
-                            val request = Request(
-                                headline = route.headline,
-                                message = route.message
-                            )
-
                             RequestScreen(
-                                headline = request.headline,
-                                message = request.message,
-                                approveRequest = {
-                                    viewModel.onEvent(RequestDetailsEvent.ApproveRequest(request))
-                                },
-                                rejectRequest = {
-                                    viewModel.onEvent(RequestDetailsEvent.RejectRequest(request))
+                                onEvent = {
+                                    viewModel.onEvent(it)
                                 }
                             )
 
                             if (requestState is RequestState.Loading) {
                                 val state = requestState as RequestState.Loading
                                 val message = if (state.approving) "Approving request..." else "Rejecting request..."
+
                                 LoadingDialog(
                                     loadingMessage = message
                                 )
@@ -175,14 +168,6 @@ class RequestDetailsActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Preview
-@Composable
-fun PreviewLoadingDialog() {
-    VIARequestTheme() {
-        LoadingDialog("Approving message...")
     }
 }
 
@@ -273,10 +258,7 @@ fun HomePreview() {
 fun RequestPreview() {
     VIARequestTheme() {
         RequestScreen(
-            headline = "Headline 1",
-            message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ultricies, purus quis viverra mattis, justo quam iaculis erat, at cursus velit justo nec libero. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nam et libero facilisis, commodo orci in, hendrerit enim. Etiam congue nec orci a placerat. Donec libero ipsum, aliquet nec lobortis vel, feugiat sed erat. Suspendisse imperdiet, massa in varius lobortis, nisi nibh porta quam, eu ullamcorper mi nulla sed justo. Maecenas fermentum imperdiet lorem quis egestas.",
-            approveRequest = {},
-            rejectRequest = {}
+            onEvent = {}
         )
     }
 }
@@ -329,13 +311,21 @@ fun HomeScreen(
 
 @Composable
 fun RequestScreen(
-    headline: String,
-    message: String,
-    approveRequest: () -> Unit,
-    rejectRequest: () -> Unit,
+    onEvent: (event: RequestDetailsEvent) -> Unit,
 ) {
     var loading by remember {
         mutableStateOf(false)
+    }
+
+    var request by remember {
+        mutableStateOf(Request(
+            headline = "",
+            message = ""
+        ))
+    }
+
+    val sliderEnabled = remember(loading, request.headline, request.message) {
+        !loading && request.headline.isNotEmpty() && request.message.isNotEmpty()
     }
 
     Column(
@@ -363,15 +353,38 @@ fun RequestScreen(
             Column(
                 modifier = Modifier.padding(16.dp),
             ) {
-                Text(headline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                TextField(
+                    request.headline,
+                    onValueChange = {
+                        request = request.copy(
+                            headline = it
+                        )
+                    },
+                    placeholder = {
+                        Text("Title of request", fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall)
+                    },
+                    textStyle = MaterialTheme.typography.headlineSmall
+                        .copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                    colors = requestTextFieldColors()
                 )
                 Spacer(Modifier.size(8.dp))
-                Text(message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
+                TextField(
+                    request.message,
+                    onValueChange = {
+                        request = request.copy(
+                            message = it
+                        )
+                    },
+                    modifier = Modifier
+                        .weight(1F),
+                    placeholder = {
+                        Text("Please describe your request.")
+                    },
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    colors = requestTextFieldColors()
                 )
             }
         }
@@ -386,21 +399,23 @@ fun RequestScreen(
         ) {
             ViaElevatedButton(
                 modifier = Modifier.weight(1F),
-                enabled = !loading,
+                enabled = sliderEnabled,
                 onClick = {
                     loading = true
-                    rejectRequest()
+                    onEvent(RequestDetailsEvent.RejectRequest(request))
                 }
             ) {
                 Text("Reject")
             }
             SliderButton(
-                modifier = Modifier.weight(3F),
+                modifier = Modifier.weight(3F)
+                    .alpha(if (sliderEnabled) 1F else 0.2F),
+                enabled = sliderEnabled,
                 originalLabel = "Slide to approve",
                 finishedLabel = "Approved",
                 onFinished = {
                     loading = true
-                    approveRequest()
+                    onEvent(RequestDetailsEvent.ApproveRequest(request))
                 }
             )
 
@@ -409,3 +424,24 @@ fun RequestScreen(
 
     }
 }
+
+@Composable
+fun <T> FlowCollector(flow: Flow<T>, collector: FlowCollector<T>) {
+    val lifecycle = LocalLifecycleOwner.current
+    LaunchedEffect(flow, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            flow.collect(collector)
+        }
+    }
+}
+
+@Composable
+fun requestTextFieldColors() = TextFieldDefaults.colors(
+    unfocusedTextColor = Color.White,
+    focusedTextColor = Color.White,
+    unfocusedContainerColor = Color.Transparent,
+    focusedContainerColor = Color.Transparent,
+    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.5f),
+    focusedPlaceholderColor = Color.White.copy(alpha = 0.5f),
+    unfocusedIndicatorColor = Color.White
+)

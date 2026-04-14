@@ -20,59 +20,49 @@ class RequestDetailViewModel @Inject constructor(
         private val requestService: RequestService
 ): ViewModel() {
 
-    private val _destinationFlow: MutableStateFlow<RequestDestination> = MutableStateFlow(
-        RequestDestination.Home)
-    val destinationFlow = _destinationFlow.asStateFlow()
+    private val _destinationFlow: MutableSharedFlow<RequestDestination> = MutableSharedFlow()
+    val destinationFlow = _destinationFlow.asSharedFlow()
 
     private val _requestStateFlow: MutableSharedFlow<RequestState> = MutableSharedFlow()
     val requestState = _requestStateFlow.asSharedFlow()
 
     fun onEvent(event: RequestDetailsEvent) {
-        when(event) {
-            is RequestDetailsEvent.CreateNewRequest -> {
-                _destinationFlow.update {
-                    RequestDestination.RequestDetails(
-                        headline = requestHeadlines.random(),
-                        message = requestMessages.random(),
-                    )
+        viewModelScope.launch {
+            when(event) {
+                is RequestDetailsEvent.CreateNewRequest -> {
+                    _destinationFlow.emit(RequestDestination.RequestDetails)
+                }
+                is RequestDetailsEvent.RejectRequest -> {
+                    rejectRequest(event.request)
+                }
+                is RequestDetailsEvent.ApproveRequest -> {
+                    acceptRequest(event.request)
                 }
             }
-            is RequestDetailsEvent.RejectRequest -> {
-                rejectRequest(event.request)
-            }
-            is RequestDetailsEvent.ApproveRequest -> {
-                acceptRequest(event.request)
-            }
         }
     }
 
-    private fun rejectRequest(request: Request) {
-        viewModelScope.launch {
-            _requestStateFlow.emit(RequestState.Loading(false))
+    private suspend fun rejectRequest(request: Request) {
+        _requestStateFlow.emit(RequestState.Loading(false))
 
-            runCatching {
-                requestService.rejectRequest(request)
-            }
-                .handleResponse()
+        runCatching {
+            requestService.rejectRequest(request)
         }
+            .handleResponse()
     }
 
-    private fun acceptRequest(request: Request) {
-        viewModelScope.launch {
-            _requestStateFlow.emit(RequestState.Loading(true))
+    private suspend fun acceptRequest(request: Request) {
+        _requestStateFlow.emit(RequestState.Loading(true))
 
-            runCatching {
-                requestService.acceptRequest(request)
-            }
-                .handleResponse()
+        runCatching {
+            requestService.acceptRequest(request)
         }
+            .handleResponse()
 
     }
 
     private suspend fun Result<RequestResponse>.handleResponse() {
-        _destinationFlow.update {
-            RequestDestination.Home
-        }
+        _destinationFlow.emit(RequestDestination.Home)
 
         onSuccess { response ->
             val state = if (response.accepted) {
@@ -87,26 +77,5 @@ class RequestDetailViewModel @Inject constructor(
                 _requestStateFlow.emit(RequestState.Error(it.message))
             }
     }
-
-    private val requestHeadlines = listOf(
-        "I wanna be the very best",
-        "Like no one ever was",
-        "To catch them is my real test",
-        "To train them is my cause",
-        "I will travel across the land",
-        "Searching far and wide",
-        "Teach Pokemon to understand",
-        "The power that's inside"
-
-    )
-
-    private val requestMessages = listOf(
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ultricies, purus quis viverra mattis, justo quam iaculis erat, at cursus velit justo nec libero. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nam et libero facilisis, commodo orci in, hendrerit enim. Etiam congue nec orci a placerat. Donec libero ipsum, aliquet nec lobortis vel, feugiat sed erat. Suspendisse imperdiet, massa in varius lobortis, nisi nibh porta quam, eu ullamcorper mi nulla sed justo. Maecenas fermentum imperdiet lorem quis egestas.",
-        "Nunc facilisis mauris nulla, eget lacinia libero euismod a. Aliquam erat volutpat. Vestibulum molestie urna non blandit congue. Nullam risus tellus, dignissim ac ante id, blandit rhoncus magna. Vivamus ornare fermentum consequat. Sed quis ex vestibulum, porttitor felis sit amet, eleifend sapien. Integer tempus molestie egestas. Nunc et orci sit amet lorem molestie mollis varius in leo. Cras mollis elit sed sem aliquet, nec tempus erat interdum. Praesent eu lacus quis libero fermentum pulvinar. Suspendisse potenti. Sed bibendum felis sit amet tellus convallis sollicitudin. Aliquam eget venenatis est, et vulputate magna. Vestibulum iaculis ante eu pellentesque bibendum. Fusce tristique eu urna at bibendum. Maecenas nec quam vel felis vehicula ultrices.",
-        "Praesent eu accumsan mi. Pellentesque sollicitudin cursus orci, non rhoncus risus interdum a. Etiam vitae porta lorem. Suspendisse potenti. Maecenas magna urna, commodo eget ex vitae, aliquet blandit odio. Sed pulvinar enim ac lobortis eleifend. Quisque id turpis non eros lobortis consequat nec ut enim. Morbi pellentesque vulputate rhoncus. Morbi faucibus tincidunt erat. Donec diam arcu, iaculis in iaculis non, commodo ut nulla. Curabitur quis urna sit amet nisi faucibus mollis eu ut eros.",
-        "Morbi ac turpis urna. Maecenas molestie eros dolor, ut faucibus erat euismod in. Nunc in sapien eget quam cursus rutrum. Nulla varius dictum leo, ut fermentum lectus finibus vel. Vestibulum in turpis ut odio sollicitudin tempus. Pellentesque quis velit sodales, pretium massa vel, consectetur leo. Sed quis euismod libero. Suspendisse commodo mauris non nunc hendrerit viverra. Quisque vel mauris eget nunc tristique auctor. Phasellus nec ultricies orci. Pellentesque eu lorem mollis, vestibulum enim sit amet, venenatis ipsum. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Suspendisse potenti. Duis nec porta arcu. Curabitur feugiat risus vel dignissim feugiat.",
-        "Sed volutpat nunc et lorem rhoncus, in bibendum est volutpat. Nunc cursus libero risus, at sagittis augue tincidunt eu. Nunc congue tellus tortor, et commodo nunc laoreet id. Donec id gravida tellus, sit amet porta eros. Aenean egestas diam a sapien gravida, sed congue nulla pulvinar. Maecenas lacinia rutrum enim. Proin aliquam massa nunc, vitae pellentesque ante porta ut. Integer hendrerit sollicitudin iaculis. Suspendisse vitae vestibulum nibh.",
-    )
-
 
 }

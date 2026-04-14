@@ -66,17 +66,16 @@ class RequestDetailViewModelTest {
     fun requestDetailViewModel_onEvent_createNewRequest() = runTest {
         val viewModel = setUpViewModelWithSuccessService()
 
-        Assert.assertEquals(
-            RequestDestination.Home::class,
-            viewModel.destinationFlow.value::class,
-
-            )
+        val values = mutableListOf<RequestDestination>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.destinationFlow.toList(values)
+        }
 
         viewModel.onEvent(RequestDetailsEvent.CreateNewRequest)
 
         Assert.assertEquals(
             RequestDestination.RequestDetails::class,
-            viewModel.destinationFlow.value::class,
+            values[0]::class,
 
         )
     }

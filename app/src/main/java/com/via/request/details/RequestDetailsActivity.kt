@@ -2,7 +2,6 @@
 
 package com.via.request.details
 
-import android.R.id.message
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -58,17 +57,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.via.request.R
 import com.via.request.ui.composables.SliderButton
 import com.via.request.ui.composables.ViaElevatedButton
 import com.via.request.models.Request
-import com.via.request.ui.theme.DarkGreen
+import com.via.request.ui.theme.DarkBlue
 import com.via.request.ui.theme.DarkerGreen
+import com.via.request.ui.theme.GreenBlue
 import com.via.request.ui.theme.LightBlue
 import com.via.request.ui.theme.LightGreen
 import com.via.request.ui.theme.LightRed
@@ -277,20 +275,21 @@ fun HomeScreen(
         Text("Home",
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
-            color = DarkGreen,
+            color = DarkBlue,
         )
         Spacer(Modifier.size(48.dp))
         Image(
             painterResource(R.drawable.via_logo),
             contentDescription = "VIA Logo",
-            contentScale = ContentScale.Inside,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .background(
                     color = Color.White,
                     shape = CircleShape,
                 )
-                .size(225.dp)
+                .padding(64.dp)
+                .size(125.dp)
         )
         Spacer(Modifier.size(48.dp))
         ViaElevatedButton(
@@ -331,7 +330,7 @@ fun RequestScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = DarkGreen)
+            .background(color = GreenBlue)
             .padding(16.dp)
         ,
     ) {
@@ -351,10 +350,12 @@ fun RequestScreen(
             )
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
             ) {
                 TextField(
                     request.headline,
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     onValueChange = {
                         request = request.copy(
                             headline = it
@@ -379,6 +380,7 @@ fun RequestScreen(
                         )
                     },
                     modifier = Modifier
+                        .fillMaxWidth()
                         .weight(1F),
                     placeholder = {
                         Text("Please describe your request.")

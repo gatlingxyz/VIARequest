@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -122,7 +123,21 @@ fun SliderButton(
         },
         track = {
             SlidingButtonTrack(
-                label = label,
+                label = {
+                    AnimatedContent(label) {
+                        Text(
+                            it,
+                            modifier = Modifier
+                                .padding(
+                                    vertical = 12.dp,
+                                )
+                            ,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = Color.White,
+                        )
+                    }
+                },
                 brush = brush
             )
         },
@@ -204,7 +219,19 @@ fun SlidingButton(
         )
 
         SlidingButtonTrack(
-            label = label,
+            label = {
+                Text(
+                    label,
+                    modifier = Modifier
+                        .padding(
+                            vertical = 12.dp,
+                        )
+                    ,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = Color.White,
+                )
+            },
             brush = brush
         )
 
@@ -234,26 +261,20 @@ fun SlidingButton(
 
 @Composable
 private fun SlidingButtonTrack(
-    label: String,
     brush: Brush,
+    label: @Composable BoxScope.() -> Unit,
 ) {
-    AnimatedContent(label) {
-        Text(
-            it,
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, ButtonOutline, shape = RoundedCornerShape(10.dp))
-                .background(
-                    brush = brush,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .padding(
-                    vertical = 12.dp
-                )
-            ,
-            textAlign = TextAlign.Center,
-            color = Color.White,
-        )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, ButtonOutline, shape = RoundedCornerShape(10.dp))
+            .background(
+                brush = brush,
+                shape = RoundedCornerShape(10.dp)
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        label()
     }
 }
 

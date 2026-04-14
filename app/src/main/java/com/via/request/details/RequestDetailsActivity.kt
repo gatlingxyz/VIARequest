@@ -10,11 +10,15 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -112,58 +116,54 @@ class RequestDetailsActivity : ComponentActivity() {
             }
 
             VIARequestTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    snackbarHost = {
-                        ViaSnackbarHost(
-                            snackbarHostState = snackbarHostState,
-                            requestState = requestState
-                        )
-                    },
-                ) { innerPadding ->
 
-                    FlowCollector(viewModel.destinationFlow) {
-                        navController.navigate(it)
-                    }
-
-                    NavHost(
-                        modifier = Modifier.padding(innerPadding),
-                        navController = navController,
-                        startDestination = RequestDestination.Home
-                    ) {
-                        composable<RequestDestination.Home> {
-                            HomeScreen(
-                                createNewRequest = {
-                                    viewModel.onEvent(RequestDetailsEvent.CreateNewRequest)
-                                }
-                            )
-                        }
-
-                        composable<RequestDestination.RequestDetails> {
-
-                            LaunchedEffect(it) {
-                                snackbarHostState.currentSnackbarData?.dismiss()
-                            }
-
-                            RequestScreen(
-                                onEvent = {
-                                    viewModel.onEvent(it)
-                                }
-                            )
-
-                            if (requestState is RequestState.Loading) {
-                                val state = requestState as RequestState.Loading
-                                val message = if (state.approving) "Approving request..." else "Rejecting request..."
-
-                                LoadingDialog(
-                                    loadingMessage = message
-                                )
-                            }
-                        }
-                    }
-
-
+                FlowCollector(viewModel.destinationFlow) {
+                    navController.navigate(it)
                 }
+
+                NavHost(
+                    modifier = Modifier,
+                    navController = navController,
+                    startDestination = RequestDestination.Home
+                ) {
+                    composable<RequestDestination.Home> {
+                        HomeScreen(
+                            snackbarHost = {
+                                ViaSnackbarHost(
+                                    snackbarHostState = snackbarHostState,
+                                    requestState = requestState
+                                )
+                            },
+                            createNewRequest = {
+                                viewModel.onEvent(RequestDetailsEvent.CreateNewRequest)
+                            }
+                        )
+                    }
+
+                    composable<RequestDestination.RequestDetails> {
+
+                        LaunchedEffect(it) {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                        }
+
+                        RequestScreen(
+                            onEvent = {
+                                viewModel.onEvent(it)
+                            }
+                        )
+
+                        if (requestState is RequestState.Loading) {
+                            val state = requestState as RequestState.Loading
+                            val message = if (state.approving) "Approving request..." else "Rejecting request..."
+
+                            LoadingDialog(
+                                loadingMessage = message
+                            )
+                        }
+                    }
+                }
+
+
             }
         }
     }
@@ -184,7 +184,8 @@ fun LoadingDialog(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -246,7 +247,8 @@ fun HomePreview() {
         HomeScreen(
             createNewRequest = {
 
-            }
+            },
+            snackbarHost = {}
         )
     }
 }
@@ -255,57 +257,72 @@ fun HomePreview() {
 @Composable
 fun RequestPreview() {
     VIARequestTheme() {
-        RequestScreen(
-            onEvent = {}
-        )
+        Scaffold() {
+            Box(Modifier.consumeWindowInsets(it)) {
+                RequestScreen(
+                    onEvent = {}
+                )
+            }
+        }
+
     }
 }
 
 @Composable
 fun HomeScreen(
+    snackbarHost: @Composable () -> Unit,
     createNewRequest: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = LightBlue)
-            .padding(16.dp)
-        ,
-    ) {
-        Text("Home",
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold,
-            color = DarkBlue,
-        )
-        Spacer(Modifier.size(48.dp))
-        Image(
-            painterResource(R.drawable.via_logo),
-            contentDescription = "VIA Logo",
-            contentScale = ContentScale.Fit,
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = snackbarHost,
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .background(
-                    color = Color.White,
-                    shape = CircleShape,
-                )
-                .padding(64.dp)
-                .size(125.dp)
-        )
-        Spacer(Modifier.size(48.dp))
-        ViaElevatedButton(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(color = LightBlue)
+                .padding(16.dp)
             ,
-            onClick = createNewRequest,
         ) {
-            Text("Create new request",
-                style = MaterialTheme.typography.bodyMedium
+            Text("Home",
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = DarkBlue,
             )
+            Spacer(Modifier.size(48.dp))
+            Image(
+                painterResource(R.drawable.via_logo),
+                contentDescription = "VIA Logo",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .background(
+                        color = Color.White,
+                        shape = CircleShape,
+                    )
+                    .padding(64.dp)
+                    .size(125.dp)
+            )
+            Spacer(Modifier.size(48.dp))
+            ViaElevatedButton(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                ,
+                onClick = createNewRequest,
+            ) {
+                Text("Create new request",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
         }
 
+
     }
+
 }
 
 @Composable
@@ -327,103 +344,111 @@ fun RequestScreen(
         !loading && request.headline.isNotEmpty() && request.message.isNotEmpty()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = GreenBlue)
-            .padding(16.dp)
-        ,
+    Scaffold(
+        containerColor = GreenBlue
     ) {
-        Text("New Request",
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-        Spacer(Modifier.size(48.dp))
-        Card(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(4F),
-            colors = CardDefaults.cardColors(
-                containerColor = DarkerGreen
-            )
+                .padding(it)
+                .fillMaxSize()
+                .padding(16.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            Text(
+                "New Request",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(Modifier.size(48.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(4F),
+                colors = CardDefaults.cardColors(
+                    containerColor = DarkerGreen
+                )
             ) {
-                TextField(
-                    request.headline,
+                Column(
                     modifier = Modifier
+                        .padding(16.dp)
                         .fillMaxWidth(),
-                    onValueChange = {
-                        request = request.copy(
-                            headline = it
-                        )
-                    },
-                    placeholder = {
-                        Text("Title of request", fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.headlineSmall)
-                    },
-                    textStyle = MaterialTheme.typography.headlineSmall
-                        .copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                    colors = requestTextFieldColors()
-                )
-                Spacer(Modifier.size(8.dp))
-                TextField(
-                    request.message,
-                    onValueChange = {
-                        request = request.copy(
-                            message = it
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1F),
-                    placeholder = {
-                        Text("Please describe your request.")
-                    },
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    colors = requestTextFieldColors()
-                )
-            }
-        }
-        Spacer(Modifier.size(48.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1F)
-            ,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ViaElevatedButton(
-                modifier = Modifier.weight(1F),
-                enabled = sliderEnabled,
-                onClick = {
-                    loading = true
-                    onEvent(RequestDetailsEvent.RejectRequest(request))
+                ) {
+                    TextField(
+                        request.headline,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        onValueChange = {
+                            request = request.copy(
+                                headline = it
+                            )
+                        },
+                        placeholder = {
+                            Text(
+                                "Title of request", fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.headlineSmall
+                            .copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        colors = requestTextFieldColors()
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    TextField(
+                        request.message,
+                        onValueChange = {
+                            request = request.copy(
+                                message = it
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1F),
+                        placeholder = {
+                            Text("Please describe your request.")
+                        },
+                        textStyle = MaterialTheme.typography.bodyMedium,
+                        colors = requestTextFieldColors()
+                    )
                 }
+            }
+            Spacer(Modifier.size(48.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1F),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Reject")
-            }
-            SliderButton(
-                modifier = Modifier.weight(3F)
-                    .alpha(if (sliderEnabled) 1F else 0.2F),
-                enabled = sliderEnabled,
-                originalLabel = "Slide to approve",
-                finishedLabel = "Approved",
-                onFinished = {
-                    loading = true
-                    onEvent(RequestDetailsEvent.ApproveRequest(request))
+                ViaElevatedButton(
+                    modifier = Modifier.weight(1F),
+                    enabled = sliderEnabled,
+                    onClick = {
+                        loading = true
+                        onEvent(RequestDetailsEvent.RejectRequest(request))
+                    }
+                ) {
+                    Text("Reject")
                 }
-            )
+                SliderButton(
+                    modifier = Modifier
+                        .weight(3F)
+                        .alpha(if (sliderEnabled) 1F else 0.2F),
+                    enabled = sliderEnabled,
+                    originalLabel = "Slide to approve",
+                    finishedLabel = "Approved",
+                    onFinished = {
+                        loading = true
+                        onEvent(RequestDetailsEvent.ApproveRequest(request))
+                    }
+                )
+
+            }
+
 
         }
-
-
     }
 }
 
